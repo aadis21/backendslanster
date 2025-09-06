@@ -2,7 +2,7 @@ import app from './src/app/index.js';
 import logger from './src/middleware/winston.logger.js';
 import connectDatabase from './src/database/connect.mongo.db.js';
 
-const port = process.env.APP_PORT || 8080; // Default fallback if APP_PORT is not defined
+const port = process.env.APP_PORT || 8020; // Default fallback if APP_PORT is not defined
 
 // Application database connection establishment
 connectDatabase().then(() => {

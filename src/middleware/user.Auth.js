@@ -31,3 +31,45 @@ export const allowRoles = (...roles) => {
         next();
     };
 };
+
+export const verifyActivePackage = async (req, res, next) => {
+    try {
+        const userId = req.user?.userId; // from auth middleware after JWT verification
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized. Please log in first.",
+            });
+        }
+
+        // Fetch user
+        const user = await UserModel.findById(userId).populate("activePackage");
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+            });
+        }
+
+        if (!user.activePackage) {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied. No active package found.",
+            });
+        }
+
+        // Attach active package to request (for further usage if needed)
+        req.activePackage = user.activePackage;
+
+        next();
+    } catch (error) {
+        console.error("Error verifying active package:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message,
+        });
+    }
+};

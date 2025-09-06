@@ -26,6 +26,11 @@ export const UserSchema = new mongoose.Schema({
         type: String,
         enum: ["ADMIN", "USER", "HR"],
         default: "USER"
+    },
+    activePackage: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Package",
+        default: null,
     }
 }, { timestamps: true });
 

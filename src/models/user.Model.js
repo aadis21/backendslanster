@@ -22,12 +22,20 @@ export const UserSchema = new mongoose.Schema({
         type: String,
         required: [true, "password is required"],
     },
+    userType: {
+        type: String,
+        enum: ["ADMIN", "USER", "HR"],
+        default: "USER"
+    }
 }, { timestamps: true });
 
 UserSchema.methods.generateAuthToken = function () {
     return jwt.sign(
-        { userId: this._id }, 
-        process.env.JWT_SECRET, 
+        {
+            userId: this._id,
+            userType: this.userType
+        },
+        process.env.JWT_SECRET,
         { expiresIn: "7d" }
     );
 };

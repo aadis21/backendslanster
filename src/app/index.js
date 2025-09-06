@@ -18,6 +18,7 @@ import morganLogger from '../middleware/morgan.logger.js';
 
 // Routes
 import UserRoutes from '../routes/user.routes.js'
+import JobsRoutes from '../routes/jobs.routes.js'
 
 // Load environment variables from .env file
 dotenv.config();
@@ -77,6 +78,7 @@ app.get("/", ServerStatus.getServerLoadInfo, (req, res) => {
 
 // Set application API routes
 app.use('/api/v1', UserRoutes);
+app.use('/api/v1', JobsRoutes);
 
 // 404 ~ not found error handler
 app.use((req, res, _next) => {

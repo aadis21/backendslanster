@@ -1,7 +1,7 @@
 const allowedOrigins = [
 	'http://localhost:3000',
 	'http://localhost:3001',
-	'https://blog-client-rev.vercel.app',
+	'https://www.slanster.com',
 	'*',
 ];
 

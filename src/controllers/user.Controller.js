@@ -6,6 +6,7 @@ import { sendSMS } from "../services/twilio.service.js";
 import otpModel from "../models/otp.Model.js";
 import { verifyEmailOtp, verifyPhoneOtp } from "../services/otp.service.js";
 import { forgotPasswordOtpTemplate, registerAutoPasswordTemplate, sendEmail } from "../services/email/index.js";
+import userProfileModel from "../models/userProfile.Model.js";
 
 export async function registerUser(req, res) {
     try {
@@ -395,3 +396,47 @@ export async function resetPassword(req, res) {
         });
     }
 }
+
+export const updateUserProfile = async (req, res) => {
+    try {
+        const { userId } = req.user; // assuming user is added by auth middleware
+        const updates = req.body;
+
+        // Find profile
+        let profile = await userProfileModel.findOne({ user: userId });
+
+        if (!profile) {
+            // ✅ Create new profile if not exists
+            profile = new userProfileModel({
+                user: userId,
+                ...updates
+            });
+        } else {
+            // ✅ Update fields (shallow merge for objects, replace arrays)
+            Object.keys(updates).forEach(key => {
+                if (Array.isArray(updates[key])) {
+                    // Replace arrays like projects, skills, certifications
+                    profile[key] = updates[key];
+                } else if (typeof updates[key] === "object" && updates[key] !== null) {
+                    // Merge nested objects like profileLinks
+                    profile[key] = { ...profile[key], ...updates[key] };
+                } else {
+                    // Simple field update
+                    profile[key] = updates[key];
+                }
+            });
+        }
+
+        // Save triggers pre("save") → profileCompletion update
+        await profile.save();
+
+        res.status(200).json({
+            success: true,
+            message: profile.isNew ? "Profile created successfully" : "Profile updated successfully",
+            profile
+        });
+    } catch (error) {
+        console.error("Update Profile Error:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};

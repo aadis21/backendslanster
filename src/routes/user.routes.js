@@ -19,6 +19,7 @@ router.route('/resetPassword').post(UserAuth, UsersController.resetPassword);
 // GET ROUTES
 
 // PUT ROUTES
+router.route('/profile/update').put(UserAuth, UsersController.updateUserProfile);
 
 // DELETE ROUTES
 

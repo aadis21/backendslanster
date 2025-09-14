@@ -6,7 +6,7 @@ export const createMentor = async (req, res) => {
 
         // Validate required fields
         if (!name || !designation || !company || !experience || !description) {
-            return res.status(400).json({ message: "All required fields must be provided." });
+            return res.status(400).json({ success: false, message: "All required fields must be provided." });
         }
 
         const newMentor = new MentorModel({
@@ -109,11 +109,11 @@ export const getMentorById = async (req, res) => {
         const { id } = req.params;
         const mentor = await MentorModel.findById(id);
 
-        if (!mentor) return res.status(404).json({ message: "Mentor not found" });
+        if (!mentor) return res.status(404).json({ success: false, message: "Mentor not found" });
 
-        res.status(200).json(mentor);
+        res.status(200).json({ success: true, message: "Mentor fetched successfully", mentor });
     } catch (error) {
-        res.status(500).json({ message: "Error fetching mentor", error: error.message });
+        res.status(500).json({ success: false, message: "Error fetching mentor", error: error.message });
     }
 };
 
@@ -127,14 +127,15 @@ export const updateMentor = async (req, res) => {
             runValidators: true,
         });
 
-        if (!updatedMentor) return res.status(404).json({ message: "Mentor not found" });
+        if (!updatedMentor) return res.status(404).json({ success: false, message: "Mentor not found" });
 
         res.status(200).json({
+            success: true,
             message: "Mentor updated successfully",
             mentor: updatedMentor,
         });
     } catch (error) {
-        res.status(500).json({ message: "Error updating mentor", error: error.message });
+        res.status(500).json({ success: false, message: "Error updating mentor", error: error.message });
     }
 };
 
@@ -144,10 +145,10 @@ export const deleteMentor = async (req, res) => {
 
         const deletedMentor = await MentorModel.findByIdAndDelete(id);
 
-        if (!deletedMentor) return res.status(404).json({ message: "Mentor not found" });
+        if (!deletedMentor) return res.status(404).json({ success: false, message: "Mentor not found" });
 
-        res.status(200).json({ message: "Mentor deleted successfully" });
+        res.status(200).json({ success: true, message: "Mentor deleted successfully" });
     } catch (error) {
-        res.status(500).json({ message: "Error deleting mentor", error: error.message });
+        res.status(500).json({ success: false, message: "Error deleting mentor", error: error.message });
     }
 };

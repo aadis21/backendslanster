@@ -17,6 +17,7 @@ router.route('/verifyForgotPasswordOtp').post(UsersController.verifyForgotPasswo
 router.route('/resetPassword').post(UserAuth, UsersController.resetPassword);
 
 // GET ROUTES
+router.route('/getUser').get(UserAuth, UsersController.getUser);
 
 // PUT ROUTES
 router.route('/profile/update').put(UserAuth, UsersController.updateUserProfile);

@@ -245,6 +245,8 @@ export const getAllJobsForAdmin = async (req, res) => {
         // Fetch all jobs
         const jobs = await jobModel
             .find()
+            .select("+isApproved +approvedBy")
+            .sort({ createdAt: -1 })
             .populate("publishBy", "username email userType")
             .populate("approvedBy", "username email userType");
 
@@ -333,7 +335,6 @@ export const getJobById = async (req, res) => {
         const job = await jobModel.findOne({
             _id: jobId,
             publishStatus: "active",
-            isApproved: true,
         });
 
         if (!job) {

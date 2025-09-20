@@ -5,9 +5,9 @@ import fs from 'fs';
 import 'dotenv/config'
 import AssessmentModel from "../models/Assessment.Model.js";
 import AssessmentModuleModel from "../models/AssessmentModule.Model.js";
-import QnaModel from '../models/Qna.model.js';
+import QnaModel from '../models/Qna.Model.js';
 import AssessmentReportModel from "../models/AssessmentReport.Model.js";
-import UserAssessmentModel from "../models/UserAssessment.model.js";
+import UserAssessmentModel from "../models/UserAssessment.Model.js";
 import userModel from '../models/user.Model.js';
 import mongoose from 'mongoose';
 

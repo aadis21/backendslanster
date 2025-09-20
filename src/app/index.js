@@ -23,6 +23,7 @@ import PackageRoutes from '../routes/package.routes.js'
 import UserFeedRoutes from '../routes/userFeed.routes.js'
 import MentorRoutes from '../routes/mentor.routes.js'
 import CoursesRoutes from '../routes/courses.routes.js'
+import AssessmentRoutes from '../routes/assessment.routes.js'
 
 // Load environment variables from .env file
 dotenv.config();
@@ -87,6 +88,7 @@ app.use('/api/v1', UserFeedRoutes);
 app.use('/api/v1', PackageRoutes);
 app.use('/api/v1', MentorRoutes);
 app.use('/api/v1', CoursesRoutes);
+app.use('/api/v1', AssessmentRoutes);
 
 // 404 ~ not found error handler
 app.use((req, res, _next) => {

@@ -11,6 +11,10 @@ export const AssessmentReportSchema = new mongoose.Schema({
         ref: 'Assessment',
         required: true
     },
+    score: {
+        type: Number,
+        default: 0
+    },
     remarks: {
         type: String,
         default: 'Assessment in progress'

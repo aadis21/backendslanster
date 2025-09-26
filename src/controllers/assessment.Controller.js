@@ -7,8 +7,6 @@ import AssessmentModel from "../models/Assessment.Model.js";
 import AssessmentModuleModel from "../models/AssessmentModule.Model.js";
 import QnaModel from '../models/Qna.Model.js';
 import AssessmentReportModel from "../models/AssessmentReport.Model.js";
-import UserAssessmentModel from "../models/UserAssessment.Model.js";
-import userModel from '../models/user.Model.js';
 import mongoose from 'mongoose';
 
 export async function createAssessment(req, res) {
@@ -24,12 +22,13 @@ export async function createAssessment(req, res) {
             assessmentDesc,
             maxMarks,
             startDate,
-            lastDate,
+            endDate,
             timelimit,
             shuffleQuestions,
             negativeMarking,
             passingPercentage,
             isProtected,
+            isVisible,
             ProctoringFor,
             Assessmentmodules,
         } = req.body;
@@ -61,12 +60,13 @@ export async function createAssessment(req, res) {
             assessmentDesc,
             maxMarks,
             startDate,
-            lastDate,
+            endDate,
             timelimit,
             shuffleQuestions,
             negativeMarking,
             passingPercentage,
             isProtected,
+            isVisible,
             ProctoringFor,
             Assessmentmodules: populatedModules,
         });
@@ -76,6 +76,8 @@ export async function createAssessment(req, res) {
 
         return res.status(201).json({ success: true, data: Assessment });
     } catch (error) {
+        console.log(error);
+        
         return res.status(500).json({ success: false, error: 'Internal server error' })
     }
 }
@@ -248,10 +250,10 @@ export async function getAllAssessmentForAdmin(req, res) {
             .sort({ createdAt: -1 })
             .populate({
                 path: 'Assessmentmodules.module',
-                populate: {
-                    path: 'questions',
-                    model: 'Qna'
-                }
+                // populate: {
+                //     path: 'questions',
+                //     model: 'Qna'
+                // }
             });
 
         const total = await AssessmentModel.countDocuments();
@@ -443,135 +445,30 @@ export async function deleteAssessment(req, res) {
     }
 }
 
-
-export const assignAssessment = async (req, res) => {
+export const getVisibleAssessments = async (req, res) => {
     try {
-        const { userId } = req.user; // who assigned
-        const { assessmentId, userIds, dueDate } = req.body;
+        const assessments = await AssessmentModel.find({ isVisible: true })
+            .select("-__v -updatedAt") // optional: exclude internal fields
+            .populate("Assessmentmodules.module", "moduleName noOfQuestions")
+            .sort({ startDate: -1 }); // ✅ latest first
 
-        if (!assessmentId || !userIds || userIds.length === 0) {
-            return res.status(400).json({
-                success: false,
-                message: "assessmentId and userIds are required"
-            });
-        }
-
-        // ✅ validate assessment
-        const assessment = await AssessmentModel.findById(assessmentId);
-        if (!assessment) {
-            return res.status(404).json({ success: false, message: "Assessment not found" });
-        }
-
-        // ✅ validate users
-        const users = await userModel.find({ _id: { $in: userIds } });
-        const foundUserIds = users.map(u => u._id.toString());
-
-        const invalidUserIds = userIds.filter(id => !foundUserIds.includes(id));
-
-        if (invalidUserIds.length > 0) {
-            return res.status(400).json({
-                success: false,
-                message: "Some userIds are invalid",
-                invalidUserIds
-            });
-        }
-
-        // ✅ prevent duplicate assignment (user already has this assessment)
-        const existingAssignments = await UserAssessmentModel.find({
-            user: { $in: userIds },
-            assessment: assessmentId
-        });
-
-        if (existingAssignments.length > 0) {
-            const alreadyAssigned = existingAssignments.map(a => a.user.toString());
-            return res.status(400).json({
-                success: false,
-                message: "Some users already have this assessment",
-                alreadyAssigned
-            });
-        }
-
-        const assignedBy = userId;
-
-        // ✅ build assignments
-        const assignments = userIds.map(userId => ({
-            user: userId,
-            assessment: assessmentId,
-            assignedBy: assignedBy,
-            dueDate,
-            status: "assigned"
-        }));
-
-        // ✅ insert all at once
-        const createdAssignments = await UserAssessmentModel.insertMany(assignments);
-
-        return res.status(201).json({
-            success: true,
-            message: "Assessment assigned successfully",
-            data: createdAssignments
-        });
-
-    } catch (error) {
-        console.error("Error assigning assessment:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Server error",
-            error: error.message
-        });
-    }
-};
-
-
-export async function getUserAssignedAssessments(req, res) {
-    try {
-        const { userId } = req.user; // auth middleware must set req.user
-
-        if (!userId) {
-            return res.status(400).json({
-                success: false,
-                message: "User ID is required"
-            });
-        }
-
-        const userAssessments = await UserAssessmentModel.find({ user: userId })
-            .populate({
-                path: "assessment",
-                select: "assessmentName assessmentDesc maxMarks passingPercentage timelimit isVisible shuffleQuestions negativeMarking",
-                populate: {
-                    path: "Assessmentmodules.module",
-                    model: "AssessmentModule",
-                    select: "moduleName timelimit noOfQuestions"
-                }
-            })
-            .populate("assignedBy", "firstName lastName email role")
-            .populate({
-                path: "report",
-                select: "remarks isAssessmentCompleted isAssessmentSuspended assessmentSubmissionTime lastIndex proctoringViolations createdAt updatedAt"
-            })
-            .sort({ createdAt: -1 });
-
-        if (!userAssessments.length) {
-            return res.status(404).json({
-                success: false,
-                message: "No assessments found for this user"
-            });
+        if (!assessments || assessments.length === 0) {
+            return res.status(404).json({ success: false, message: "No visible assessments found" });
         }
 
         return res.status(200).json({
             success: true,
-            count: userAssessments.length,
-            assessments: userAssessments
+            count: assessments.length,
+            data: assessments,
         });
-
     } catch (error) {
+        console.error("Error fetching visible assessments:", error);
         return res.status(500).json({
             success: false,
-            message: "Internal server error",
-            error: error.message
+            message: "Server error while fetching visible assessments",
         });
     }
-}
-
+};
 
 export const startAssessment = async (req, res) => {
     const session = await mongoose.startSession();
@@ -583,20 +480,6 @@ export const startAssessment = async (req, res) => {
 
         if (!assessmentId) {
             return res.status(400).json({ success: false, message: "assessmentId is required" });
-        }
-
-        // ✅ check assignment exists
-        const userAssignment = await UserAssessmentModel.findOne({
-            user: userId,
-            assessment: assessmentId,
-            status: { $in: ["assigned", "in-progress"] }
-        });
-
-        if (!userAssignment) {
-            return res.status(403).json({
-                success: false,
-                message: "You are not assigned to this assessment or it is already completed"
-            });
         }
 
         // ✅ get assessment
@@ -616,7 +499,7 @@ export const startAssessment = async (req, res) => {
             assessment: assessmentId
         });
 
-        if (existingReport) {
+        if (existingReport || (!existingReport.isAssessmentCompleted && !existingReport.isAssessmentSuspended)) {
             await session.commitTransaction();
             session.endSession();
 
@@ -650,7 +533,7 @@ export const startAssessment = async (req, res) => {
         });
 
         // ✅ create new report
-        const report = await AssessmentReportModel.create(
+        const [report] = await AssessmentReportModel.create(
             [
                 {
                     user: userId,
@@ -663,19 +546,13 @@ export const startAssessment = async (req, res) => {
             { session }
         );
 
-        // ✅ update userAssignment to "in-progress"
-        userAssignment.status = "in-progress";
-        userAssignment.lastAttempt = new Date();
-        userAssignment.report = report[0]._id; 
-        await userAssignment.save({ session });
-
         await session.commitTransaction();
         session.endSession();
 
         return res.status(201).json({
             success: true,
             message: "Assessment started successfully",
-            report: report[0]
+            report
         });
     } catch (error) {
         await session.abortTransaction();
@@ -984,6 +861,7 @@ export async function finishAssessment(req, res) {
             return res.status(400).json({ success: false, message: "Invalid answers format" });
         }
 
+        // ✅ Save submitted answers
         for (const submitted of parsedAnswers) {
             const { index, answer } = submitted;
             const currentIndex = index - 1;
@@ -1008,7 +886,7 @@ export async function finishAssessment(req, res) {
             }
         }
 
-        // Second: recalculate total score from *all* questions
+        // ✅ Calculate total score
         let totalScore = 0;
         for (const module of userReport.generatedModules) {
             for (const q of module.module.generatedQustionSet) {
@@ -1025,7 +903,7 @@ export async function finishAssessment(req, res) {
             }
         }
 
-        // Update report
+        // ✅ Update AssessmentReport directly
         userReport.isAssessmentSuspended = isSuspended || false;
         userReport.assessmentSubmissionTime = submissionTime;
         userReport.assessmentScreenshots = userScreenshots;
@@ -1033,20 +911,9 @@ export async function finishAssessment(req, res) {
         userReport.remarks = remarks || "Assessment completed";
         userReport.lastIndex = lastIndex || 1;
         userReport.isAssessmentCompleted = true;
+        userReport.score = totalScore; // 🔥 save score in report
 
         await userReport.save();
-
-        // Update UserAssessment with score
-        await UserAssessmentModel.findOneAndUpdate(
-            { user: userId, assessment: assessmentId },
-            {
-                $set: {
-                    score: totalScore,
-                    status: isSuspended ? "suspended" : "completed",
-                    lastAttempt: new Date()
-                }
-            }
-        );
 
         return res.status(200).send({
             success: true,
@@ -1073,36 +940,30 @@ export async function getAllUsersResultForAssessment(req, res) {
             });
         }
 
-        // Find all user assessments for this assessment
-        const userAssessments = await UserAssessmentModel.find({ assessment: assessmentId })
-            .populate("user", "username email") // only basic user info
-            .populate("report"); // link to AssessmentReport
+        // ✅ Fetch all reports for this assessment
+        const userReports = await AssessmentReportModel.find({ assessment: assessmentId })
+            .populate("user", "username email"); // only basic user info
 
-            console.log(userAssessments);
-            
-        if (!userAssessments.length) {
+        if (!userReports.length) {
             return res.status(404).json({
                 success: false,
                 message: "No users found for this assessment"
             });
         }
 
-        // Format response
-        const results = userAssessments.map(ua => ({
-            userId: ua.user?._id,
-            name: ua.username,
-            email: ua.user?.email,
-            status: ua.status,
-            score: ua.score,
-            attemptCount: ua.attemptCount,
-            lastAttempt: ua.lastAttempt,
-            remarks: ua.report?.remarks,
-            isAssessmentCompleted: ua.report?.isAssessmentCompleted,
-            isAssessmentSuspended: ua.report?.isAssessmentSuspended,
-            assessmentSubmissionTime: ua.report?.assessmentSubmissionTime,
-            proctoringViolations: ua.report?.proctoringViolations,
-            createdAt: ua.createdAt,
-            updatedAt: ua.updatedAt
+        // ✅ Format response
+        const results = userReports.map(report => ({
+            userId: report.user?._id,
+            name: report.user?.username,
+            email: report.user?.email,
+            score: report.score,
+            remarks: report.remarks,
+            isAssessmentCompleted: report.isAssessmentCompleted,
+            isAssessmentSuspended: report.isAssessmentSuspended,
+            assessmentSubmissionTime: report.assessmentSubmissionTime,
+            proctoringViolations: report.proctoringViolations,
+            createdAt: report.createdAt,
+            updatedAt: report.updatedAt
         }));
 
         return res.status(200).json({
@@ -1132,24 +993,13 @@ export async function getUserResultForAssessment(req, res) {
             });
         }
 
-        // Get user's assessment info (marks, status, etc.)
-        const userAssessment = await UserAssessmentModel.findOne({
-            user: userId,
-            assessment: assessmentId
-        }).populate("user", "username email");
-
-        if (!userAssessment) {
-            return res.status(404).json({
-                success: false,
-                message: "User assessment not found"
-            });
-        }
-
-        // Get detailed report with questions
+        // ✅ Fetch the user's report with full details
         const userReport = await AssessmentReportModel.findOne({
             user: userId,
             assessment: assessmentId
-        }).populate("generatedModules.module.generatedQustionSet.question");
+        })
+            .populate("user", "username email")
+            .populate("generatedModules.module.generatedQustionSet.question");
 
         if (!userReport) {
             return res.status(404).json({
@@ -1182,19 +1032,18 @@ export async function getUserResultForAssessment(req, res) {
 
         return res.status(200).json({
             success: true,
-            userId: userId,
-            name: userAssessment.user.username,
-            email: userAssessment.user.email,
-            assessmentId: assessmentId,
-            status: userAssessment.status,
-            score: userAssessment.score, // use stored score
-            attemptCount: userAssessment.attemptCount,
-            lastAttempt: userAssessment.lastAttempt,
+            userId: userReport.user?._id,
+            name: userReport.user?.username,
+            email: userReport.user?.email,
+            assessmentId,
+            score: userReport.score, // ✅ stored score in report
             remarks: userReport.remarks,
             isAssessmentCompleted: userReport.isAssessmentCompleted,
             isAssessmentSuspended: userReport.isAssessmentSuspended,
             assessmentSubmissionTime: userReport.assessmentSubmissionTime,
             proctoringViolations: userReport.proctoringViolations,
+            createdAt: userReport.createdAt,
+            updatedAt: userReport.updatedAt,
             questions
         });
 

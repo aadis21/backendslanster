@@ -7,7 +7,6 @@ import UserAuth, { allowRoles } from '../middleware/user.Auth.js';
 // POST ROUTES
 router.route('/assessment/create').post(UserAuth, allowRoles("ADMIN"), AssessmentController.createAssessment);
 router.route('/assessment/module/add-questions').post(UserAuth, allowRoles("ADMIN"), AssessmentController.addQuestionsToAssessment);
-router.route('/assessment/assign-assessment').post(UserAuth, allowRoles("ADMIN"), AssessmentController.assignAssessment);
 router.route('/assessment/start-assessment').post(UserAuth, AssessmentController.startAssessment);
 router.route('/assessment/submit-answer/:assessmentId').post(UserAuth, AssessmentController.submitAnswerForAssessment);
 router.route('/assessment/finish-assessment/:assessmentId').post(UserAuth, AssessmentController.finishAssessment);
@@ -18,7 +17,7 @@ router.route('/assessments/:assessmentId').get(UserAuth, allowRoles("ADMIN"), As
 router.route('/assessments/admin/result/:assessmentId').get(UserAuth, allowRoles("ADMIN"), AssessmentController.getAllUsersResultForAssessment);
 router.route('/assessments/admin/result/:assessmentId/:userId').get(UserAuth, allowRoles("ADMIN"), AssessmentController.getUserResultForAssessment);
 
-router.route('/assessments/user/assigned-assessments').get(UserAuth, AssessmentController.getUserAssignedAssessments);
+router.route('/assessments').get(UserAuth, AssessmentController.getVisibleAssessments);
 router.route('/assessment/questions/:assessmentId').get(UserAuth, AssessmentController.getAssesmentAllQuestions);
 router.route('/assessment/question/:assessmentId').get(UserAuth, AssessmentController.getAssesmentQuestion);
 

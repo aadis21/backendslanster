@@ -447,19 +447,36 @@ export async function deleteAssessment(req, res) {
 
 export const getVisibleAssessments = async (req, res) => {
     try {
+        const { userId } = req.user;
+
         const assessments = await AssessmentModel.find({ isVisible: true })
-            .select("-__v -updatedAt") // optional: exclude internal fields
+            .select("-__v -updatedAt")
             .populate("Assessmentmodules.module", "moduleName noOfQuestions")
-            .sort({ startDate: -1 }); // ✅ latest first
+            .sort({ startDate: -1 });
 
         if (!assessments || assessments.length === 0) {
             return res.status(404).json({ success: false, message: "No visible assessments found" });
         }
 
+        // ✅ Fetch report for each assessment for this user
+        const results = await Promise.all(
+            assessments.map(async (assessment) => {
+                const report = await AssessmentReportModel.findOne({
+                    user: userId,
+                    assessment: assessment._id
+                });
+
+                return {
+                    ...assessment.toObject(),
+                    userReport: report || null
+                };
+            })
+        );
+
         return res.status(200).json({
             success: true,
-            count: assessments.length,
-            data: assessments,
+            count: results.length,
+            data: results
         });
     } catch (error) {
         console.error("Error fetching visible assessments:", error);

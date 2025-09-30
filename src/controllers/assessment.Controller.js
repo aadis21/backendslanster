@@ -516,7 +516,7 @@ export const startAssessment = async (req, res) => {
             assessment: assessmentId
         });
 
-        if (existingReport || (!existingReport.isAssessmentCompleted && !existingReport.isAssessmentSuspended)) {
+        if (existingReport && (!existingReport.isAssessmentCompleted && !existingReport.isAssessmentSuspended)) {
             await session.commitTransaction();
             session.endSession();
 

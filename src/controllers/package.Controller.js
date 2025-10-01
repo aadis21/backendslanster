@@ -337,14 +337,18 @@ export const getActivePackage = async (req, res) => {
     try {
         const userId = req.user.userId;
 
-        const user = await userModel.findById(userId).populate("activePackage");
-        if (!user) {
-            return res.status(404).json({ success: false, message: "User not found" });
+        const activePackage = await purchasedPackageModel.findOne({
+            user: userId,
+            status: "ACTIVE"
+        }).populate("package"); // populate package details if needed
+
+        if (!activePackage) {
+            return res.status(404).json({ success: false, message: "No active package found" });
         }
 
         res.status(200).json({
             success: true,
-            activePackage: user.activePackage,
+            activePackage,
         });
     } catch (error) {
         console.error("Error fetching active package:", error);

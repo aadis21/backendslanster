@@ -14,7 +14,7 @@ router.route('/categories').get(UserAuth, PackageController.getAllCategories);
 router.route('/categories/:id').get(UserAuth, PackageController.getCategoryById);
 router.route('/packages').get(UserAuth, PackageController.getAllPackages);
 router.route('/package/:id').get(UserAuth, PackageController.getPackageById);
-router.route('/getCategoriesWithPackages').get(UserAuth, PackageController.getCategoriesWithPackages);
+router.route('/getCategoriesWithPackages').get(PackageController.getCategoriesWithPackages);
 router.route('/package/purchase/active').get(UserAuth, PackageController.getActivePackage);
 router.route('/package/purchase/history').get(UserAuth, PackageController.getPurchaseHistory);
 
